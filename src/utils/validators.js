@@ -1,5 +1,7 @@
 // AI-assisted: see docs/AI_LOG.md #1
 // Funciones puras: cada una devuelve el mensaje de error o null si el valor es válido
+import { DOCUMENT_RULES, getLicenseValidityYears, getMaxExpiryDates } from '../config/documentRules';
+import { addYears, endOfDay, formatDate, startOfDay } from './dates';
 const NAME_REGEX = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/;
 const PLATE_REGEX = /^[A-Z]{3}\d{3}$/;
@@ -43,8 +45,10 @@ export function validatePassword(value) {
 
 export function validateBirthDate(date) {
   if (!date) return 'La fecha de nacimiento es obligatoria';
-  const adultDate = new Date(date.getFullYear() + 18, date.getMonth(), date.getDate());
-  if (adultDate > new Date()) return 'Debes ser mayor de 18 años';
+  const today = new Date();
+  // AI-assisted: see docs/AI_LOG.md #3
+  if (startOfDay(date) > addYears(today, -DOCUMENT_RULES.minDriverAge)) return 'Debes ser mayor de 18 años';
+  if (startOfDay(date) < addYears(today, -DOCUMENT_RULES.maxDriverAge)) return 'Fecha de nacimiento no válida';
   return null;
 }
 
@@ -99,3 +103,58 @@ export const validateVehicle = (data) => ({
   capacity: validateCapacity(data.capacity, data.category),
   photo: required(data.photo, 'La foto del vehículo es obligatoria'),
 });
+
+// ---------- Pestaña 3: Documentos y pagos ----------
+// AI-assisted: see docs/AI_LOG.md #2, #3
+
+export function requiresTechReview(vehicleYear) {
+  if (!/^\d{4}$/.test(vehicleYear ?? '')) return true;
+  return new Date().getFullYear() - Number(vehicleYear) >= DOCUMENT_RULES.techReviewExemptYears;
+}
+
+export function validateLicenseNumber(value) {
+  if (isEmpty(value)) return 'El número de licencia es obligatorio';
+  if (!/^\d{6,12}$/.test(value)) return 'Debe tener entre 6 y 12 dígitos';
+  return null;
+}
+
+// La fecha de vencimiento debe ser posterior a hoy y no superar la vigencia máxima del documento
+export function validateExpiryDate(date, label, maxDate, maxReason) {
+  if (!date) return `La fecha de vencimiento ${label} es obligatoria`;
+  if (date <= endOfDay(new Date())) return 'El documento está vencido: la fecha debe ser posterior a hoy';
+  if (maxDate && startOfDay(date) > startOfDay(maxDate)) {
+    return `No puede ser posterior al ${formatDate(maxDate)} (${maxReason})`;
+  }
+  return null;
+}
+
+export const validateDocuments = (data, vehicleYear, birthDate) => {
+  const needsTechReview = requiresTechReview(vehicleYear);
+  const maxDates = getMaxExpiryDates(birthDate);
+  const licenseYears = getLicenseValidityYears(birthDate);
+  return {
+    licenseNumber: validateLicenseNumber(data.licenseNumber),
+    licensePhoto: required(data.licensePhoto, 'La foto de la licencia es obligatoria'),
+    licenseExpiry: validateExpiryDate(
+      data.licenseExpiry,
+      'de la licencia',
+      maxDates.license,
+      `vigencia máxima de ${licenseYears} ${licenseYears === 1 ? 'año' : 'años'} según tu edad`,
+    ),
+    soatPhoto: required(data.soatPhoto, 'La foto del SOAT es obligatoria'),
+    soatExpiry: validateExpiryDate(data.soatExpiry, 'del SOAT', maxDates.soat, 'el SOAT tiene vigencia de 1 año'),
+    techReviewPhoto: needsTechReview
+      ? required(data.techReviewPhoto, 'La foto de la revisión técnico-mecánica es obligatoria')
+      : null,
+    techReviewExpiry: needsTechReview
+      ? validateExpiryDate(
+          data.techReviewExpiry,
+          'de la revisión',
+          maxDates.techReview,
+          'la revisión tiene vigencia de 1 año',
+        )
+      : null,
+    mercadoPagoEmail: validateEmail(data.mercadoPagoEmail),
+    acceptedTerms: data.acceptedTerms ? null : 'Debes aceptar los términos para continuar',
+  };
+};

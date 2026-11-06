@@ -5,7 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import FieldContainer from './FieldContainer';
 import { COLORS, fieldBox } from '../constants/theme';
 
-export default function DateField({ label, error, value, onChange, maximumDate }) {
+export default function DateField({ label, hint, error, value, onChange, maximumDate, minimumDate, defaultDate }) {
   const [visible, setVisible] = useState(false);
 
   const handleChange = (event, selectedDate) => {
@@ -16,6 +16,7 @@ export default function DateField({ label, error, value, onChange, maximumDate }
 
   return (
     <FieldContainer label={label} error={error}>
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       <Pressable style={[styles.box, error && styles.boxError]} onPress={() => setVisible(true)}>
         <Text style={[styles.text, !value && styles.placeholder]}>
           {value ? value.toLocaleDateString('es-CO') : 'Selecciona una fecha'}
@@ -24,10 +25,11 @@ export default function DateField({ label, error, value, onChange, maximumDate }
       {visible && (
         <View>
           <DateTimePicker
-            value={value ?? new Date(2000, 0, 1)}
+            value={value ?? defaultDate ?? new Date(2000, 0, 1)}
             mode="date"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             maximumDate={maximumDate}
+            minimumDate={minimumDate}
             onChange={handleChange}
           />
           {Platform.OS === 'ios' && (
@@ -47,4 +49,5 @@ const styles = StyleSheet.create({
   text: { fontSize: 16, color: COLORS.text },
   placeholder: { color: COLORS.muted },
   done: { textAlign: 'right', fontWeight: '700', padding: 8 },
+  hint: { color: COLORS.muted, fontSize: 12, marginBottom: 6 },
 });

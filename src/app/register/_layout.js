@@ -10,13 +10,13 @@ const tabIcon = (emoji, done) =>
   };
 
 export default function RegisterLayout() {
-  const { isPersonalValid, isVehicleValid } = useRegistration();
+  const { isPersonalValid, isVehicleValid, isDocumentsValid } = useRegistration();
 
   return (
     <Tabs screenOptions={{ headerTitleAlign: 'center', tabBarActiveTintColor: '#000', tabBarHideOnKeyboard: true }}>
       <Tabs.Screen name="personal" options={{ title: 'Datos personales', tabBarIcon: tabIcon('👤', isPersonalValid) }} />
       <Tabs.Screen name="vehicle" options={{ title: 'Vehículo', tabBarIcon: tabIcon('🚗', isVehicleValid) }} />
-      <Tabs.Screen name="documents" options={{ title: 'Documentos', tabBarIcon: tabIcon('📄', false) }} />
+      <Tabs.Screen name="documents" options={{ title: 'Documentos', tabBarIcon: tabIcon('📄', isDocumentsValid) }} />
     </Tabs>
   );
 }

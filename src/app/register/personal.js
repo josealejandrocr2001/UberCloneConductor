@@ -10,6 +10,8 @@ import DateField from '../../components/DateField';
 import ImagePickerField from '../../components/ImagePickerField';
 import PrimaryButton from '../../components/PrimaryButton';
 import { GENDERS, LANGUAGES } from '../../constants/options';
+import { DOCUMENT_RULES } from '../../config/documentRules';
+import { addYears } from '../../utils/dates';
 
 const onlyDigits = (text) => text.replace(/\D/g, '');
 
@@ -69,7 +71,10 @@ export default function PersonalScreen() {
       <DateField
         label="Fecha de nacimiento"
         value={personal.birthDate}
-        maximumDate={new Date()}
+        // AI-assisted: see docs/AI_LOG.md #3 — el selector solo permite fechas de personas entre 18 y 100 años
+        maximumDate={addYears(new Date(), -DOCUMENT_RULES.minDriverAge)}
+        minimumDate={addYears(new Date(), -DOCUMENT_RULES.maxDriverAge)}
+        defaultDate={addYears(new Date(), -25)}
         onChange={(date) => change('birthDate', date)}
         error={err('birthDate')}
       />
