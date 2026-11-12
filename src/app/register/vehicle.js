@@ -1,5 +1,5 @@
 // AI-assisted: see docs/AI_LOG.md #1
-import { ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useRegistration } from '../../context/RegistrationContext';
 import { useTouched } from '../../hooks/useTouched';
@@ -7,6 +7,7 @@ import FormField from '../../components/FormField';
 import SelectField from '../../components/SelectField';
 import ImagePickerField from '../../components/ImagePickerField';
 import PrimaryButton from '../../components/PrimaryButton';
+import FormScreen from '../../components/FormScreen';
 import { CATEGORIES, VEHICLE_COLORS } from '../../constants/options';
 
 const onlyDigits = (text) => text.replace(/\D/g, '');
@@ -27,7 +28,7 @@ export default function VehicleScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <FormScreen contentContainerStyle={styles.container}>
       <SelectField
         label="Categoría"
         value={vehicle.category}
@@ -91,7 +92,7 @@ export default function VehicleScreen() {
       />
 
       <PrimaryButton title="Siguiente: Documentos" onPress={handleNext} />
-    </ScrollView>
+    </FormScreen>
   );
 }
 
