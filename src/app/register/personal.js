@@ -1,5 +1,5 @@
 // AI-assisted: see docs/AI_LOG.md #1
-import { ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Link, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegistration } from '../../context/RegistrationContext';
@@ -9,6 +9,7 @@ import SelectField from '../../components/SelectField';
 import DateField from '../../components/DateField';
 import ImagePickerField from '../../components/ImagePickerField';
 import PrimaryButton from '../../components/PrimaryButton';
+import FormScreen from '../../components/FormScreen';
 import { GENDERS, LANGUAGES } from '../../constants/options';
 import { DOCUMENT_RULES } from '../../config/documentRules';
 import { addYears } from '../../utils/dates';
@@ -37,7 +38,7 @@ export default function PersonalScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <FormScreen contentContainerStyle={styles.container}>
       <ImagePickerField
         label="Foto de perfil"
         round
@@ -119,7 +120,7 @@ export default function PersonalScreen() {
       <Link href="/login" style={styles.link}>
         ¿Ya tienes cuenta? Inicia sesión
       </Link>
-    </ScrollView>
+    </FormScreen>
   );
 }
 
