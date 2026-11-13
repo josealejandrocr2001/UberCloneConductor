@@ -1,6 +1,6 @@
 // AI-assisted: see docs/AI_LOG.md #2
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { COMMISSION_RATE } from '../config/pricing';
 import { requiresTechReview } from '../utils/validators';
@@ -57,8 +57,34 @@ export async function registerDriver({ personal, vehicle, documents }) {
     commissionRate: COMMISSION_RATE,
     status: DRIVER_STATUS.PENDING,
     available: false,
+    balance: 0, // saldo simulado del conductor (sección 4)
+    activeTripId: null,
     createdAt: serverTimestamp(),
   });
 
   return user;
+}
+
+// ---------- Estado del conductor en Firestore ----------
+// AI-assisted: see docs/AI_LOG.md #7
+
+export function updateDriverLocation(uid, coords) {
+  return updateDoc(doc(db, 'drivers', uid), {
+    location: { lat: coords.latitude, lng: coords.longitude, heading: coords.heading ?? null, updatedAt: serverTimestamp() },
+  });
+}
+
+export function setDriverAvailability(uid, available) {
+  return updateDoc(doc(db, 'drivers', uid), { available });
+}
+
+// Solo campos editables desde el perfil (nunca el estado de aprobación)
+export function updateDriverProfile(uid, { fullName, phone, language, mercadoPagoEmail, vehicleColor }) {
+  return updateDoc(doc(db, 'drivers', uid), {
+    'personal.fullName': fullName.trim(),
+    'personal.phone': phone,
+    'personal.language': language,
+    'vehicle.color': vehicleColor,
+    mercadoPagoEmail: mercadoPagoEmail.trim().toLowerCase(),
+  });
 }

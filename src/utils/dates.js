@@ -21,3 +21,18 @@ export function getAge(birthDate, today = new Date()) {
 }
 
 export const formatDate = (date) => date.toLocaleDateString('es-CO');
+
+// AI-assisted: see docs/AI_LOG.md #7
+// Semana de lunes a domingo
+export function startOfWeek(date = new Date()) {
+  const day = (date.getDay() + 6) % 7; // lunes = 0
+  return addDays(startOfDay(date), -day);
+}
+
+export const startOfMonth = (date = new Date()) => new Date(date.getFullYear(), date.getMonth(), 1);
+
+export const formatDateTime = (date) =>
+  `${date.toLocaleDateString('es-CO')} ${date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`;
+
+// Convierte un Timestamp de Firestore (o Date) a Date
+export const toDate = (value) => (value?.toDate ? value.toDate() : value instanceof Date ? value : null);
