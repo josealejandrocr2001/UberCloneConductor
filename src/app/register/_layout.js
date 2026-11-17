@@ -1,6 +1,6 @@
 // AI-assisted: see docs/AI_LOG.md #1
 import { Text } from 'react-native';
-import { Tabs } from 'expo-router';
+import { Tabs } from 'expo-router/js-tabs'; // importar Tabs desde 'expo-router' está deprecado en SDK 58
 import { useRegistration } from '../../context/RegistrationContext';
 
 // Ícono de la pestaña: muestra ✅ cuando la sección está completa y válida

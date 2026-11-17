@@ -1,7 +1,7 @@
 // AI-assisted: see docs/AI_LOG.md #1
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
-import { Link, router } from 'expo-router';
+import { KeyboardAvoidingView, StyleSheet, Text } from 'react-native';
+import { Link, Redirect, router } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import FormField from '../components/FormField';
 import PrimaryButton from '../components/PrimaryButton';
@@ -15,11 +15,14 @@ const AUTH_ERRORS = {
 };
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  // AI-assisted: see docs/AI_LOG.md #7 — si ya hay sesión, va directo al Inicio
+  if (user) return <Redirect href="/" />;
 
   const handleLogin = async () => {
     const newErrors = {
@@ -32,7 +35,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email, password);
-      router.replace('/home');
+      router.replace('/');
     } catch (error) {
       setErrors({ general: AUTH_ERRORS[error.code] ?? 'No fue posible iniciar sesión' });
     } finally {
@@ -41,7 +44,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <Text style={styles.title}>UberClone</Text>
       <Text style={styles.subtitle}>Conductor</Text>
 
