@@ -1,10 +1,11 @@
 // AI-assisted: see docs/AI_LOG.md #7
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { useAuth } from '../../../context/AuthContext';
 import { useTrip } from '../../../context/TripContext';
 import { useDriverLocation } from '../../../hooks/useDriverLocation';
+import { notifyPassengerCancelled } from '../../../services/notificationService';
 import { cancelTrip, finishTrip, markPassengerOnBoard } from '../../../services/tripService';
 import { PAYMENT_METHOD_LABELS, TRIP_STATUS, TRIP_STATUS_LABELS } from '../../../constants/trip';
 import { COLORS } from '../../../constants/theme';
@@ -17,13 +18,31 @@ import StatusBadge from '../../../components/StatusBadge';
 
 export default function ActiveTripScreen() {
   const { driver } = useAuth();
-  const { activeTrip: trip, activeTripId } = useTrip();
+  const { activeTrip: trip, activeTripId, setNotice } = useTrip();
   const [busy, setBusy] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [error, setError] = useState(null);
 
   // Durante el viaje la ubicación se sigue enviando a la base de datos
   const { location } = useDriverLocation(driver?.id, true);
+
+  // AI-assisted: see docs/AI_LOG.md #9 — SIMULACIÓN: el pasajero puede cancelar mientras el conductor va por él.
+  // Si el conductor marca "Pasajero a bordo" antes, la limpieza del efecto cancela el temporizador.
+  const cancelAfterSec = trip?.status === TRIP_STATUS.DRIVER_ARRIVING ? trip?.simulatedPassengerCancelSec : null;
+  useEffect(() => {
+    if (!cancelAfterSec || !trip || !driver) return undefined;
+    const timer = setTimeout(async () => {
+      try {
+        await cancelTrip(trip.id, driver.id, 'passenger');
+        setNotice(`❌ ${trip.passengerName} canceló el viaje.`);
+        notifyPassengerCancelled(trip);
+        router.replace('/');
+      } catch {
+        // si falla, el viaje sigue normalmente
+      }
+    }, cancelAfterSec * 1000);
+    return () => clearTimeout(timer);
+  }, [cancelAfterSec, trip?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!activeTripId) return <Redirect href="/" />;
   if (!trip) {

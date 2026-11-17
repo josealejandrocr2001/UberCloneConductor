@@ -1,6 +1,6 @@
 // AI-assisted: see docs/AI_LOG.md #7
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { router, useIsFocused } from 'expo-router';
 import MapView from 'react-native-maps';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,17 +9,18 @@ import { useTrip } from '../../context/TripContext';
 import { useDriverLocation } from '../../hooks/useDriverLocation';
 import { useTripRequests } from '../../hooks/useTripRequests';
 import { setDriverAvailability } from '../../services/driverService';
-import { CATEGORY_LABELS } from '../../constants/trip';
+import { CATEGORY_LABELS, TRIP_STATUS } from '../../constants/trip';
 import { COLORS } from '../../constants/theme';
 import { DEFAULT_LOCATION, toLatLng } from '../../utils/geo';
 import Card from '../../components/Card';
 import StatusBadge from '../../components/StatusBadge';
+import PrimaryButton from '../../components/PrimaryButton';
 
 const AVAILABILITY_KEY = '@lastAvailability';
 
 export default function HomeScreen() {
   const { driver } = useAuth();
-  const { activeTripId } = useTrip();
+  const { activeTrip, activeTripId, notice, setNotice } = useTrip();
   const isFocused = useIsFocused();
   const mapRef = useRef(null);
 
@@ -31,10 +32,14 @@ export default function HomeScreen() {
   useEffect(() => {
     AsyncStorage.getItem(AVAILABILITY_KEY)
       .then((value) => {
-        if (value === 'true' && approved) setAvailable(true);
+        if (value === 'true' && approved && driver?.id) {
+          setAvailable(true);
+          // AI-assisted: see docs/AI_LOG.md #8 — sincroniza también el estado en Firestore
+          setDriverAvailability(driver.id, true).catch(() => {});
+        }
       })
       .catch(() => {});
-  }, [approved]);
+  }, [approved, driver?.id]);
 
   // Si la cuenta deja de estar aprobada, no puede seguir disponible
   useEffect(() => {
@@ -109,6 +114,27 @@ export default function HomeScreen() {
           <Switch value={available} onValueChange={toggleAvailability} disabled={!approved} />
         </View>
 
+        {notice ? (
+          <Pressable style={styles.notice} onPress={() => setNotice(null)}>
+            <Text style={styles.noticeText}>{notice}</Text>
+            <Text style={styles.noticeHint}>Toca para cerrar</Text>
+          </Pressable>
+        ) : null}
+
+        {/* AI-assisted: see docs/AI_LOG.md #8 — si el conductor salió del viaje (botón Atrás), puede volver a él */}
+        {activeTripId ? (
+          <PrimaryButton
+            title="🚗 Tienes un viaje en curso · Ver viaje"
+            onPress={() =>
+              router.replace(
+                activeTrip?.status === TRIP_STATUS.COMPLETED || activeTrip?.status === TRIP_STATUS.PAID
+                  ? '/trip/summary'
+                  : '/trip/active',
+              )
+            }
+          />
+        ) : null}
+
         {available && approved && !activeTripId ? (
           <View style={styles.searching}>
             <ActivityIndicator size="small" />
@@ -139,4 +165,7 @@ const styles = StyleSheet.create({
   searching: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   note: { color: COLORS.muted, fontSize: 13 },
   error: { color: COLORS.error, fontSize: 13 },
+  notice: { backgroundColor: '#FDECEA', borderRadius: 8, padding: 10 },
+  noticeText: { color: COLORS.error, fontWeight: '700' },
+  noticeHint: { color: COLORS.muted, fontSize: 12 },
 });

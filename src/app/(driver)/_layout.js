@@ -48,7 +48,7 @@ function DriverDrawerContent(props) {
 }
 
 export default function DriverLayout() {
-  const { user, initializing, driverLoading } = useAuth();
+  const { user, initializing, driver, driverLoading, logout } = useAuth();
   const { activeTrip } = useTrip();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
@@ -75,6 +75,25 @@ export default function DriverLayout() {
 
   if (!user) return <Redirect href="/login" />;
 
+  // AI-assisted: see docs/AI_LOG.md #8 — cuenta de Authentication sin documento en "drivers"
+  if (!driver) {
+    return (
+      <View style={styles.loading}>
+        <Text style={styles.noProfile}>Esta cuenta no tiene perfil de conductor.</Text>
+        <Text style={styles.noProfileHint}>Regístrate desde la pantalla de inicio de sesión para crear uno.</Text>
+        <Pressable
+          style={styles.logout}
+          onPress={async () => {
+            await logout();
+            router.replace('/login');
+          }}
+        >
+          <Text style={[styles.logoutText, { textAlign: 'center' }]}>Cerrar sesión</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <Drawer
       drawerContent={(props) => <DriverDrawerContent {...props} />}
@@ -94,7 +113,9 @@ export default function DriverLayout() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, justifyContent: 'center' },
+  loading: { flex: 1, justifyContent: 'center', padding: 24 },
+  noProfile: { fontSize: 18, fontWeight: '800', textAlign: 'center' },
+  noProfileHint: { color: COLORS.muted, textAlign: 'center', marginTop: 8 },
   header: { padding: 16, gap: 4, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 8 },
   name: { fontSize: 18, fontWeight: '800' },
   vehicle: { color: COLORS.muted },

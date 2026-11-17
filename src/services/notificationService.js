@@ -47,3 +47,16 @@ export async function notifyNewRequest(trip) {
     // La notificación es un apoyo: si falla, la solicitud igual aparece en pantalla
   }
 }
+
+// AI-assisted: see docs/AI_LOG.md #9
+export async function notifyPassengerCancelled(trip) {
+  if (!ready) return;
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: { title: '❌ Viaje cancelado', body: `${trip.passengerName} canceló el viaje.` },
+      trigger: null,
+    });
+  } catch {
+    // apoyo visual opcional
+  }
+}

@@ -26,6 +26,7 @@ const driverRef = (driverId) => doc(db, 'drivers', driverId);
 
 const SIMULATED_PASSENGERS = ['Laura Gómez', 'Andrés Restrepo', 'Valentina Ríos', 'Camilo Zapata', 'Sara Muñoz', 'Mateo Arango'];
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
+const PASSENGER_CANCEL_PROBABILITY = 0.25;
 
 /**
  * SIMULACIÓN de la app del pasajero (la profesora indicó simular los datos):
@@ -68,6 +69,8 @@ export async function createSimulatedRequest({ driverId, category, driverLocatio
     rating: null,
     status: TRIP_STATUS.REQUESTED,
     simulated: true,
+    // AI-assisted: see docs/AI_LOG.md #9 — 1 de cada 4 pasajeros simulados cancela mientras el conductor va a recogerlo
+    simulatedPassengerCancelSec: Math.random() < PASSENGER_CANCEL_PROBABILITY ? 15 + Math.round(Math.random() * 15) : null,
     createdAt: serverTimestamp(),
     completedAt: null,
   });
@@ -120,12 +123,12 @@ export function markPassengerOnBoard(tripId) {
   return updateDoc(doc(db, 'trips', tripId), { status: TRIP_STATUS.IN_PROGRESS, startedAt: serverTimestamp() });
 }
 
-/** Cancelación del conductor: solo permitida antes de in_progress. */
-export async function cancelTrip(tripId, driverId) {
+/** Cancelación por cualquiera de las partes ('driver' | 'passenger'): solo antes de in_progress. */
+export async function cancelTrip(tripId, driverId, cancelledBy = 'driver') {
   const batch = writeBatch(db);
   batch.update(doc(db, 'trips', tripId), {
     status: TRIP_STATUS.CANCELLED,
-    cancelledBy: 'driver',
+    cancelledBy,
     cancelledAt: serverTimestamp(),
   });
   batch.update(driverRef(driverId), { activeTripId: null });

@@ -10,6 +10,7 @@ export function TripProvider({ children }) {
   const { driver } = useAuth();
   const activeTripId = driver?.activeTripId ?? null;
   const [activeTrip, setActiveTrip] = useState(null);
+  const [notice, setNotice] = useState(null); // p. ej. "El pasajero canceló el viaje"
 
   useEffect(() => {
     if (!activeTripId) {
@@ -19,7 +20,7 @@ export function TripProvider({ children }) {
     return subscribeToTrip(activeTripId, setActiveTrip); // limpieza: deja de escuchar el viaje
   }, [activeTripId]);
 
-  const value = useMemo(() => ({ activeTrip, activeTripId }), [activeTrip, activeTripId]);
+  const value = useMemo(() => ({ activeTrip, activeTripId, notice, setNotice }), [activeTrip, activeTripId, notice]);
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;
 }
 
