@@ -1,6 +1,6 @@
 // AI-assisted: see docs/AI_LOG.md #2
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useRegistration } from '../../context/RegistrationContext';
 import { useTouched } from '../../hooks/useTouched';
@@ -9,6 +9,7 @@ import DateField from '../../components/DateField';
 import ImagePickerField from '../../components/ImagePickerField';
 import CheckboxField from '../../components/CheckboxField';
 import PrimaryButton from '../../components/PrimaryButton';
+import FormScreen from '../../components/FormScreen';
 import { COMMISSION_RATE } from '../../config/pricing';
 import { registerDriver } from '../../services/driverService';
 import { requiresTechReview } from '../../utils/validators';
@@ -40,6 +41,7 @@ export default function DocumentsScreen() {
   const { touch, visibleError, revealAll } = useTouched();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(null); // AI-assisted: see docs/AI_LOG.md #9
 
   const change = (field, value) => {
     updateDocuments(field, value);
@@ -66,18 +68,22 @@ export default function DocumentsScreen() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await registerDriver({ personal, vehicle, documents });
+      await registerDriver(
+        { personal, vehicle, documents },
+        { onProgress: (done, total) => setUploadProgress({ done, total }) },
+      );
       resetRegistration();
-      router.replace('/home');
+      router.replace('/');
     } catch (error) {
-      setSubmitError(REGISTER_ERRORS[error.code] ?? 'No fue posible enviar el registro. Intenta de nuevo.');
+      setSubmitError(REGISTER_ERRORS[error.code] ?? error.message ?? 'No fue posible enviar el registro. Intenta de nuevo.');
     } finally {
       setSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <FormScreen contentContainerStyle={styles.container}>
       <Text style={styles.section}>Licencia de conducción</Text>
       <FormField
         label="Número de licencia"
@@ -174,10 +180,15 @@ export default function DocumentsScreen() {
         <Text>Documentos: {isDocumentsValid ? '✅ Completos' : '❌ Incompletos'}</Text>
       </View>
 
+      {uploadProgress ? (
+        <Text style={styles.info}>
+          Subiendo fotos {uploadProgress.done}/{uploadProgress.total}…
+        </Text>
+      ) : null}
       {submitError ? <Text style={styles.submitError}>{submitError}</Text> : null}
 
       <PrimaryButton title="Enviar registro" disabled={!canSubmit} loading={submitting} onPress={handleSubmit} />
-    </ScrollView>
+    </FormScreen>
   );
 }
 
